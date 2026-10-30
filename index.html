@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b6b4a">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Générateur de rapport mensuel d’activités</title>
+<style>
+:root{--g:#0b6b4a;--g2:#e6f3ed;--b:#d5dbd8;--t:#1c2623;--m:#5d6b66}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--t);background:#f4f7f5}
+header{background:var(--g);color:#fff;padding:18px 20px}
+header h1{margin:0;font-size:20px}header p{margin:4px 0 0;opacity:.85;font-size:13px}
+main{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:16px}
+@media(min-width:960px){main{grid-template-columns:1fr 1fr;align-items:start}}
+section,.card{background:#fff;border:1px solid var(--b);border-radius:10px;padding:14px}
+h2{font-size:15px;margin:0 0 10px;color:var(--g)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.grid .w{grid-column:1/-1}
+label{font-size:12px;color:var(--m);display:block}
+input,select,textarea{width:100%;padding:7px 8px;border:1px solid var(--b);border-radius:6px;font:inherit;background:#fff}
+textarea{min-height:70px;resize:vertical}
+table.in{width:100%;border-collapse:collapse;font-size:13px}
+table.in th{font-size:11px;text-align:left;color:var(--m);padding:2px 4px}
+table.in td{padding:2px 4px}table.in td:first-child{width:38%}
+table.in input{padding:5px}
+.lw{display:flex;gap:4px;align-items:center}
+.del{flex:none;width:28px;height:28px;border:1px solid #e0b4b4;background:#fff5f5;color:#b3261e;border-radius:6px;cursor:pointer;font-size:13px;line-height:1}
+.del:hover{background:#b3261e;color:#fff}
+.add{background:none;border:1px dashed var(--g);color:var(--g);border-radius:6px;padding:4px 10px;margin-top:6px;cursor:pointer;font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+button.p{background:var(--g);color:#fff;border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.s{background:#fff;border:1px solid var(--g);color:var(--g);border-radius:8px;padding:10px 14px;font:inherit;cursor:pointer}
+#out{min-height:200px;font:14px/1.55 "Times New Roman",serif;padding:14px;border:1px solid var(--b);border-radius:8px;background:#fff;overflow-x:auto}
+#out h1{font-size:18px;text-align:center;color:#000}#out h3{font-size:15px;margin:16px 0 4px;color:#0b4f38}
+#out table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}
+#out th,#out td{border:1px solid #888;padding:4px 6px;text-align:right}
+#out th{background:#e6f3ed}#out td:first-child,#out th:first-child{text-align:left}
+.hint{font-size:12px;color:var(--m)}#msg{font-size:13px;color:var(--g);min-height:18px}
+.sticky{position:sticky;top:8px}
+@media print{header,#in,.bar,.hint,#msg{display:none!important}main{display:block;padding:0}.card{border:0}#out{border:0}}
+</style>
+</head>
+<body>
+<header><h1>Générateur de rapport mensuel d’activités</h1>
+<p>Saisissez vos chiffres, le rapport se rédige seul. Fonctionne hors ligne, aucune donnée ne quitte votre appareil.</p></header>
+<main>
+<div id="in" style="display:grid;gap:16px">
+<section><h2>1. Identification</h2>
+<div class="grid">
+<div class="w"><label>Structure / formation sanitaire</label><input id="fs" placeholder="Centre de santé de …"></div>
+<div><label>District / commune</label><input id="dist" placeholder="Ratoma"></div>
+<div><label>Région sanitaire</label><input id="reg" placeholder="Conakry"></div>
+<div><label>Mois</label><select id="mois"></select></div>
+<div><label>Année</label><input id="annee" type="number"></div>
+<div><label>Rédigé par</label><input id="auteur"></div>
+<div><label>Fonction</label><input id="fonc"></div>
+</div></section>
+<div id="secs" style="display:grid;gap:16px"></div>
+<section><h2>5. Analyse qualitative</h2>
+<div class="grid">
+<div class="w"><label>Faits marquants (un par ligne)</label><textarea id="faits"></textarea></div>
+<div class="w"><label>Difficultés rencontrées (une par ligne)</label><textarea id="diff"></textarea></div>
+<div class="w"><label>Actions menées / solutions apportées (une par ligne)</label><textarea id="act"></textarea></div>
+<div class="w"><label>Besoins et recommandations (un par ligne)</label><textarea id="rec"></textarea></div>
+<div class="w"><label>Perspectives du mois prochain (une par ligne)</label><textarea id="persp"></textarea></div>
+</div></section>
+</div>
+<div class="card sticky"><h2>Rapport généré</h2>
+<div class="bar" style="margin:0 0 10px">
+<button class="p" onclick="gen()">Générer le rapport</button>
+<button class="s" onclick="copier()">Copier pour Word</button>
+<button class="s" onclick="window.print()">Imprimer / PDF</button>
+<button class="s" onclick="reset()">Tout effacer</button></div>
+<div id="msg"></div>
+<div id="out" contenteditable="true"><p class="hint">Le rapport apparaîtra ici. Vous pouvez le retoucher directement avant de le copier. Laissez vide ce que vous n’avez pas à déclarer.</p></div>
+<p class="hint">Astuce : renseignez « Mois préc. » pour obtenir automatiquement les évolutions, et « Cible » pour calculer les couvertures vaccinales. Les données sont mémorisées sur cet appareil.</p>
+</div>
+</main>
+<script>
+const MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const SEC=[
+{id:"cur",t:"2. Activités curatives",rows:["Nouvelles consultations curatives","Référés / évacuations","Hospitalisations","Décès toutes causes"]},
+{id:"smi",t:"3. Santé de la mère et de l’enfant",rows:["CPN1","CPN4","Accouchements assistés","Consultations postnatales","Nouvelles utilisatrices de PF"]},
+{id:"vac",t:"4. Vaccination",cible:1,rows:["BCG","Penta 3","VPO 3","VAR 1","VAA"]},
+{id:"sur",t:"4 bis. Surveillance épidémiologique (cas)",deces:1,rows:["Paludisme confirmé","Diarrhée aiguë","Infections respiratoires aiguës","Rougeole (suspect)","Méningite (suspect)","PFA","Fièvre hémorragique (suspect)"]}
+];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const num=x=>x===""||x==null||isNaN(x)?null:+x;
+const N=x=>x.toLocaleString("fr-FR");
+let custom={};
+
+function rowHTML(s,l,isC){
+  return `<tr><td>${isC?`<div class="lw"><input class="l" value="${esc(l)}" placeholder="Indicateur"><button type="button" class="del" title="Supprimer cet indicateur" aria-label="Supprimer cet indicateur" onclick="delRow(this)">✕</button></div>`:esc(l)}</td>
+  <td><input class="v" type="number" min="0" inputmode="numeric"></td>
+  ${s.cible?'<td><input class="c" type="number" min="0" inputmode="numeric"></td>':''}
+  ${s.deces?'<td><input class="d" type="number" min="0" inputmode="numeric"></td>':''}
+  <td><input class="p" type="number" min="0" inputmode="numeric"></td></tr>`;
+}
+function build(){
+  $("mois").innerHTML=MOIS.map((m,i)=>`<option value="${i}">${m}</option>`).join("");
+  const d=new Date();$("mois").value=(d.getMonth()+11)%12;$("annee").value=d.getMonth()===0?d.getFullYear()-1:d.getFullYear();
+  $("secs").innerHTML=SEC.map(s=>`<section id="s_${s.id}"><h2>${s.t}</h2><div style="overflow-x:auto"><table class="in"><thead><tr><th>Indicateur</th><th>Réalisé</th>${s.cible?'<th>Cible</th>':''}${s.deces?'<th>Décès</th>':''}<th>Mois préc.</th></tr></thead><tbody>${s.rows.map(r=>rowHTML(s,r,false)).join("")}</tbody></table></div><button class="add" onclick="addRow('${s.id}')">+ Ajouter un indicateur</button></section>`).join("");
+}
+function addRow(id,l){const s=SEC.find(x=>x.id==id);
+  document.querySelector(`#s_${id} tbody`).insertAdjacentHTML("beforeend",rowHTML(s,l||"",true));
+  if(l===undefined)document.querySelector(`#s_${id} tbody tr:last-child .l`).focus();}
+
+function delRow(b){
+  const tr=b.closest("tr");
+  const filled=[...tr.querySelectorAll("input")].some(i=>i.value.trim()!=="");
+  if(filled&&!confirm("Supprimer cet indicateur et ses valeurs ?"))return;
+  tr.remove();save();msg("Indicateur supprimé.");
+}
+function collect(s){
+  return [...document.querySelectorAll(`#s_${s.id} tbody tr`)].map(tr=>{
+    const q=c=>{const e=tr.querySelector("."+c);return e?num(e.value):null};
+    const le=tr.querySelector(".l");
+    return {l:le?le.value.trim():tr.cells[0].textContent,v:q("v"),c:q("c"),d:q("d"),p:q("p")};
+  }).filter(r=>r.l&&r.v!==null);
+}
+function evo(r){
+  if(r.p===null)return "";
+  if(r.p===0)return r.v>0?"nouveau":"stable";
+  const x=(r.v-r.p)/r.p*100;
+  if(Math.abs(x)<1)return "stable";
+  return (x>0?"+":"−")+Math.abs(Math.round(x))+" %";
+}
+function evoTxt(r){
+  if(r.p===null)return "";
+  const e=evo(r);
+  if(e==="stable")return " (stable par rapport au mois précédent)";
+  if(e==="nouveau")return " (contre aucun le mois précédent)";
+  return ` (${e[0]==="+"?"hausse":"baisse"} de ${e.slice(1)} par rapport au mois précédent)`;
+}
+function cov(r){return r.c>0?r.v/r.c*100:null}
+function table(s,rows){
+  let h=`<table><tr><th>Indicateur</th><th>Réalisé</th>${s.cible?'<th>Cible</th><th>Couverture</th>':''}${s.deces?'<th>Décès</th><th>Létalité</th>':''}<th>Mois préc.</th><th>Évolution</th></tr>`;
+  rows.forEach(r=>{const cv=cov(r);
+    h+=`<tr><td>${esc(r.l)}</td><td>${N(r.v)}</td>${s.cible?`<td>${r.c!==null?N(r.c):""}</td><td>${cv!==null?cv.toFixed(1).replace(".",",")+" %":""}</td>`:""}${s.deces?`<td>${r.d!==null?N(r.d):""}</td><td>${r.d!==null&&r.v>0?(r.d/r.v*100).toFixed(1).replace(".",",")+" %":""}</td>`:""}<td>${r.p!==null?N(r.p):""}</td><td>${evo(r)}</td></tr>`;});
+  return h+"</table>";
+}
+function narr(s,rows){
+  let t;
+  if(s.id==="vac"){
+    const l=rows.map(r=>{const cv=cov(r);return `${r.l} : ${N(r.v)} enfants vaccinés${cv!==null?`, soit une couverture de ${cv.toFixed(1).replace(".",",")} %`:""}`});
+    t=`Les activités de vaccination ont donné les résultats suivants : ${l.join(" ; ")}.`;
+    const bas=rows.filter(r=>cov(r)!==null&&cov(r)<80).map(r=>r.l),ok=rows.filter(r=>cov(r)!==null&&cov(r)>=90).map(r=>r.l);
+    if(ok.length)t+=` L’objectif de couverture (≥ 90 %) est atteint pour : ${ok.join(", ")}.`;
+    if(bas.length)t+=` Les couvertures restent insuffisantes (< 80 %) pour : ${bas.join(", ")} ; ces antigènes appellent un renforcement des stratégies avancées et de la recherche des perdus de vue.`;
+    return t;
+  }
+  if(s.id==="sur"){
+    t=`La surveillance épidémiologique a notifié : ${rows.map(r=>`${r.l} : ${N(r.v)} cas${r.d?` dont ${N(r.d)} décès`:""}${evoTxt(r)}`).join(" ; ")}.`;
+    const al=rows.filter(r=>/rougeole|méningite|PFA|hémorragique/i.test(r.l)&&r.v>0).map(r=>r.l);
+    if(al.length)t+=` Une vigilance particulière est requise pour les maladies à potentiel épidémique ou à éradication notifiées ce mois (${al.join(", ")}) : investigation et notification immédiates.`;
+    return t;
+  }
+  t=`Les résultats du mois se présentent comme suit : ${rows.map(r=>`${r.l} : ${N(r.v)}${evoTxt(r)}`).join(" ; ")}.`;
+  const w=rows.filter(r=>r.p>0&&Math.abs((r.v-r.p)/r.p)>=0.2);
+  if(w.length)t+=` On note des variations marquées (≥ 20 %) pour : ${w.map(r=>r.l.toLowerCase()).join(", ")}.`;
+  return t;
+}
+function liste(id,titre){
+  const L=$(id).value.split("\n").map(x=>x.trim()).filter(Boolean);
+  if(!L.length)return "";
+  return `<h3>${titre}</h3>`+(L.length>1?`<ul>${L.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<p>${esc(L[0])}</p>`);
+}
+function gen(){
+  const per=`${MOIS[$("mois").value]} ${$("annee").value}`;
+  const fs=$("fs").value.trim()||"la structure",loc=[$("dist").value.trim(),$("reg").value.trim()].filter(Boolean).join(", ");
+  let h=`<h1>RAPPORT D’ACTIVITÉS — ${per.toUpperCase()}</h1><p style="text-align:center">${esc(fs)}${loc?" — "+esc(loc):""}</p>`;
+  h+=`<h3>1. Introduction</h3><p>Le présent rapport rend compte des activités réalisées par ${esc(fs)}${loc?" ("+esc(loc)+")":""} au cours du mois de ${per}. Il présente successivement les activités curatives, la santé de la mère et de l’enfant, la vaccination, la surveillance épidémiologique, puis les difficultés rencontrées et les recommandations.</p>`;
+  let any=false;
+  SEC.forEach(s=>{const rows=collect(s);if(!rows.length)return;any=true;
+    h+=`<h3>${s.t}</h3><p>${esc(narr(s,rows)).replace(/&lt;/g,"<")}</p>${table(s,rows)}`;});
+  if(!any)h+=`<p><i>Aucun chiffre saisi.</i></p>`;
+  h+=liste("faits","Faits marquants")+liste("diff","Difficultés rencontrées")+liste("act","Actions menées")+liste("rec","Besoins et recommandations")+liste("persp","Perspectives");
+  h+=`<h3>Conclusion</h3><p>Ce rapport couvre l’ensemble des activités du mois de ${per}. Les efforts doivent se poursuivre pour consolider les acquis et corriger les insuffisances relevées.</p>`;
+  h+=`<p style="margin-top:20px">Fait le ${new Date().toLocaleDateString("fr-FR")}<br>${esc($("auteur").value)}${$("fonc").value?", "+esc($("fonc").value):""}</p>`;
+  $("out").innerHTML=h;msg("Rapport généré. Relisez, retouchez si besoin, puis copiez.");
+}
+function msg(t){$("msg").textContent=t;setTimeout(()=>{if($("msg").textContent===t)$("msg").textContent=""},4000)}
+function copier(){
+  const r=document.createRange();r.selectNodeContents($("out"));
+  const s=getSelection();s.removeAllRanges();s.addRange(r);
+  let ok=false;try{ok=document.execCommand("copy")}catch(e){}
+  msg(ok?"Copié. Collez maintenant dans Word (Ctrl+V).":"Sélection faite : faites Ctrl+C puis collez dans Word.");
+}
+const ids=["fs","dist","reg","mois","annee","auteur","fonc","faits","diff","act","rec","persp"];
+function save(){try{
+  const rows={};SEC.forEach(s=>rows[s.id]=[...document.querySelectorAll(`#s_${s.id} tbody tr`)].map(tr=>({l:tr.querySelector(".l")?tr.querySelector(".l").value:null,v:[...tr.querySelectorAll("input:not(.l)")].map(i=>i.value)})));
+  const f={};ids.forEach(i=>f[i]=$(i).value);
+  localStorage.setItem("rapport_mensuel",JSON.stringify({f,rows}));}catch(e){}}
+function load(){try{
+  const d=JSON.parse(localStorage.getItem("rapport_mensuel")||"null");if(!d)return;
+  SEC.forEach(s=>{const base=s.rows.length,a=d.rows[s.id]||[];
+    for(let i=base;i<a.length;i++)addRow(s.id,a[i].l||"");
+    document.querySelectorAll(`#s_${s.id} tbody tr`).forEach((tr,i)=>{if(a[i])tr.querySelectorAll("input:not(.l)").forEach((inp,j)=>inp.value=a[i].v[j]||"")});});
+  ids.forEach(i=>{if(d.f[i]!=null)$(i).value=d.f[i]});
+}catch(e){}}
+function reset(){if(!confirm("Effacer toutes les données saisies ?"))return;try{localStorage.removeItem("rapport_mensuel")}catch(e){}location.reload()}
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+build();load();
+document.addEventListener("input",e=>{if(e.target.closest("#in"))save()});
+</script>
+</body>
+</html>
